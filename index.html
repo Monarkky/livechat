@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Situs Game Online - Test Widget</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-200 h-screen flex flex-col justify-center items-center">
+
+    <div class="max-w-md bg-white p-8 rounded-2xl shadow-xl text-center">
+        <h1 class="text-2xl font-bold text-slate-900 mb-2">Website Test</h1>
+        <p class="text-slate-500 text-sm mb-6">Klik widget chat biru di bawah kanan untuk melihat paparan Pra-Sembang Promo.</p>
+    </div>
+
+    <!-- WIDGET CHAT MELAYANG -->
+    <div id="chat-widget-window" class="fixed bottom-6 right-6 w-80 max-w-[calc(100vw-3rem)] h-[520px] bg-[#1a1a1a] rounded-2xl shadow-2xl border border-slate-700 flex flex-col overflow-hidden z-30">
+        
+        <!-- Header Widget -->
+        <div class="bg-blue-600 text-white p-4 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                <i class="fa-solid fa-user"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-sm leading-none mb-1">Live Chat</h3>
+                <p class="text-[10px] text-blue-200 leading-none">Online & siap membantu</p>
+            </div>
+        </div>
+
+        <!-- Ruang Kandungan Dinamik -->
+        <div id="cust-content-area" class="flex-1 flex flex-col overflow-hidden text-sm">
+            <!-- Borang Pra-Sembang dengan Maklumat Promo akan dipaparkan di sini melalui JS -->
+        </div>
+    </div>
+
+    <script>
+        const channel = new BroadcastChannel('livechat_studio_channel');
+        let appState = {
+            customer: { name: '', isRegistered: false },
+            messages: [],
+            status: 'prechat'
+        };
+
+        function renderWidget() {
+            const container = document.getElementById('cust-content-area');
+            
+            // JIKA PELANGGAN BELUM ISI NAMA (TAMPILKAN PROMO SEPERTI DI GAMBAR)
+            if (!appState.customer.isRegistered) {
+                container.innerHTML = `
+                    <div class="flex-1 overflow-y-auto p-5 text-[#e5e5e5] text-xs leading-relaxed" style="background-color: #212121;">
+                        <p class="mb-3">Situs Game Slot Online Terbesar Paling Gacor No.1 Indonesia</p>
+                        
+                        <p class="font-bold text-amber-500 mb-1">🔥 PROMO BONUS TERGACOR 🔥</p>
+                        <ul class="mb-3 space-y-1">
+                            <li>✅ Promo Bawa Teman Dapat Cuan</li>
+                            <li>✅ Lucky Spin Wheel x15</li>
+                            <li>✅ Bonus New Member 50%</li>
+                            <li>✅ Bonus Depo Harian Up To 100%</li>
+                            <li>✅ Bonus Rolling Mingguan Slot 7%</li>
+                            <li>✅ Cashback Sportbook 20%</li>
+                        </ul>
+
+                        <p class="font-bold text-blue-400 mb-1">🌐 LINK ALTERNATIF 🌐</p>
+                        <ul class="mb-3 space-y-1 list-disc pl-4 text-blue-300">
+                            <li><a href="#" class="underline">https://zerolink.site/high1</a></li>
+                            <li><a href="#" class="underline">https://zerolink.site/high2</a></li>
+                            <li><a href="#" class="underline">https://bit.ly/m/HIGH4D</a></li>
+                        </ul>
+
+                        <p class="font-bold text-pink-500 mb-1">☎️ CHAT ADMIN VIA TELE & WA ☎️</p>
+                        <ul class="mb-4 space-y-1">
+                            <li>Admin Claim (Fast Respon):<br>
+                                <a href="#" class="text-blue-300 underline">https://t.me/siskahigh</a>
+                            </li>
+                            <li>Admin CS:<br>
+                                <a href="#" class="text-blue-300 underline">https://wa.me/855968096047</a>
+                            </li>
+                        </ul>
+
+                        <div class="mt-4">
+                            <label class="block mb-1 text-slate-300">Nama:</label>
+                            <input type="text" id="pre-name" class="w-full bg-[#141414] border border-slate-600 rounded p-2 text-white outline-none focus:border-blue-500" placeholder="Masukkan nama...">
+                        </div>
+                        <button onclick="startChat()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-3 transition">Mulai Chat</button>
+                    </div>
+                `;
+            } 
+            // JIKA PELANGGAN SUDAH ISI NAMA (TAMPILKAN RUANG CHAT)
+            else {
+                let html = '<div class="flex-1 overflow-y-auto space-y-3 p-4 bg-[#212121]" id="msg-list">';
+                appState.messages.forEach(m => {
+                    const isCust = m.sender === 'customer';
+                    html += `<div class="flex flex-col ${isCust ? 'items-end' : 'items-start'}">
+                        <div class="max-w-[80%] px-3.5 py-2 rounded-xl text-xs ${isCust ? 'bg-blue-600 text-white' : 'bg-[#333] text-white'}">
+                            ${m.text}
+                        </div>
+                        <span class="text-[9px] text-slate-400 mt-0.5">${m.senderName} • ${m.time}</span>
+                    </div>`;
+                });
+                html += `</div>
+                <div class="flex items-center gap-2 p-3 bg-[#1a1a1a] border-t border-slate-700">
+                    <input type="text" id="cust-input" onkeydown="if(event.key==='Enter') sendMsg()" placeholder="Ketik pesan..." class="flex-1 px-3 py-2 bg-[#2a2a2a] rounded-lg border border-slate-600 text-white text-xs focus:outline-none focus:border-blue-500">
+                    <button onclick="sendMsg()" class="bg-blue-600 hover:bg-blue-700 text-white w-9 h-9 rounded-lg flex items-center justify-center text-xs"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>`;
+                container.innerHTML = html;
+                const list = document.getElementById('msg-list');
+                if(list) list.scrollTop = list.scrollHeight;
+            }
+        }
+
+        function startChat() {
+            const nameInput = document.getElementById('pre-name');
+            if(!nameInput || !nameInput.value.trim()) {
+                alert("Sila masukkan nama anda.");
+                return;
+            }
+            
+            appState.customer.name = nameInput.value.trim();
+            appState.customer.isRegistered = true;
+            appState.status = 'active';
+
+            localStorage.setItem('livechat_studio_state', JSON.stringify(appState));
+
+            channel.postMessage({ type: 'STATE_UPDATE', state: appState });
+            renderWidget();
+        }
+
+        function sendMsg() {
+            const input = document.getElementById('cust-input');
+            if(!input || !input.value.trim()) return;
+            
+            appState.messages.push({
+                id: 'msg_' + Date.now(),
+                sender: 'customer',
+                senderName: appState.customer.name,
+                text: input.value.trim(),
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            });
+            input.value = '';
+
+            localStorage.setItem('livechat_studio_state', JSON.stringify(appState));
+
+            channel.postMessage({ type: 'NEW_MESSAGE', state: appState });
+            renderWidget();
+        }
+
+        channel.onmessage = (event) => {
+            if(event.data && event.data.state) {
+                appState = event.data.state;
+                renderWidget();
+            }
+        };
+
+        window.onload = renderWidget;
+    </script>
+</body>
+</html>
